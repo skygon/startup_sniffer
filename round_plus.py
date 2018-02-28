@@ -10,4 +10,4 @@ round_plus['41'] = u'上市'
 round_plus['50'] = u'并购'
 round_plus['60'] = u'战略投资'
 
-print json.dumps(round)
+print json.dumps(round_plus, ensure_ascii=False)
