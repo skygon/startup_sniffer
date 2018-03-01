@@ -2,12 +2,15 @@
 import urllib  
 import urllib2
 import json
+from worker import Worker
+from utils import company_queue
 
 class YGSSniffer(object):
     def __init__(self):
         self.start_page = 1
         self.per_page_count = 10
-        self.idate = urllib2.quote("2018;2017") # 2018%3B2017
+        self.thread_load = 10 # each thread fetch 10 pages
+        self.idate = urllib2.quote("2018") # 2018%3B2017
         self.area = "%E6%B5%99%E6%B1%9F"
         # all areas templare url, with idate configurable
         self.template_url = "https://www.innotree.cn/inno/search/ajax/getAllSearchResult?query=&tagquery=&st=%s&ps=%s&areaName=&rounds=&show=0&idate=%s&edate=&cSEdate=-1&cSRound=-1&cSFdate=1&cSInum=-1&iSNInum=1&iSInum=-1&iSEnum=-1&iSEdate=-1&fchain="
@@ -46,11 +49,6 @@ class YGSSniffer(object):
         except Exception, e:
             print "prepare url error: ", e
 
-    def fetchOnePage(self, page_id):
-        try:
-            pass
-        except Exception, e:
-            print "fetch one page failed: ", e
 
     def fetchAllPages(self):
         try:
@@ -62,9 +60,32 @@ class YGSSniffer(object):
             
             res = response.read()
             data = json.loads(res)
-            company_info = data['data']['company']['infos']
-            str = json.dumps(company_info[0], ensure_ascii=False)
-            print str
+            count = data['data']['company']['count']
+            
+            thread_count = count / self.per_page_count / self.thread_load
+            threads = []
+            start_page = 0
+            for i in range(thread_count):
+                start_page = i * self.per_page_count + 1
+                t = Worker(self.template_url, start_page, self.per_page_count, self.idate, self.thread_load, company_queue)
+                threads.append(t)
+            
+            # left few pages, use another thread to fetch
+            start_page = start_page + self.per_page_count
+            t = Worker(self.template_url, start_page, self.per_page_count, self.idate, self.thread_load,company_queue)
+            threads.append(t)
+            
+            for t in threads:
+                if t.isAlive():
+                    t.join()
+
+            # start to process
+            total_items = 0
+            while(company_queue.empty() is False):
+                company_queue.get()
+                total_items = total_items + 1
+            
+            print "Total items ",  total_items
         except Exception, e:
             print "fetch all pages failed: ", e
 
