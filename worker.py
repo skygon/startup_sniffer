@@ -16,6 +16,7 @@ class Worker(threading.Thread):
         #self.values = {'name' : 'who','password':'123456'}  
         #self.data = urllib.urlencode(values)  
         self.headers = { 'User-Agent' : self.user_agent } 
+        print "worker[tid: %s] start page: %s" %(threading.current_thread().ident, self.start_page)
         self.start() 
 
     def run(self):
@@ -30,7 +31,8 @@ class Worker(threading.Thread):
                 
                 res = response.read()
                 data = json.loads(res)
-                if (data['data']['company']['count'] == 0):
+                if len(data['data']['company']['infos']) == 0:
+                    print "count is zero"
                     break
 
                 self.queue.put(data['data']['company']['infos'])
@@ -38,4 +40,5 @@ class Worker(threading.Thread):
                 count = count + 1
             except Exception, e:
                 print "Worker error: ", e
-        print "Finish work"
+        print "Worker[tid: %s] finish page index: %s" %(threading.current_thread().ident, self.start_page-1)
+        
