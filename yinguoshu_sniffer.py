@@ -15,7 +15,29 @@ class YGSSniffer(object):
         #self.values = {'name' : 'who','password':'123456'}  
         #self.data = urllib.urlencode(values)  
         self.headers = { 'User-Agent' : self.user_agent }  
+        self.prepare_information_schema()
 
+    def prepare_information_schema(self):
+        self.prepare_company_info_schema()
+        self.prepare_inst_info_schema()
+    
+    def prepare_company_info_schema(self):
+        self.company_metadata = []
+        self.company_metadata.append("alias")
+        self.company_metadata.append("idate")
+        self.company_metadata.append("round")
+        self.company_metadata.append("amount")
+        self.company_metadata.append("address")
+        self.company_metadata.append("edate")  
+        self.company_metadata.append("name")
+        self.company_metadata.append("insts")
+        self.company_metadata.append("mainClassify")
+        self.company_metadata.append("mainChain")
+        self.company_metadata.append("tags")
+    
+    def prepare_inst_info_schema(self):
+        self.inst_metadata = []
+        self.inst_metadata.append("instName")
 
     def prepareUrl(self, template_url, page_index, page_count, date_str):
         try:
@@ -37,11 +59,16 @@ class YGSSniffer(object):
             response = urllib2.urlopen(req)
             if (response.getcode() != 200):
                 raise Exception("HTTP request failed, url: ", url)
+            
+            res = response.read()
+            data = json.loads(res)
+            company_info = data['data']['company']['infos']
+            str = json.dumps(company_info[0], ensure_ascii=False)
+            print str
         except Exception, e:
             print "fetch all pages failed: ", e
 
 
 if __name__ == "__main__":
     ygs = YGSSniffer()
-    #ygs.fetchAllPages()
-    ygs.test_raise()
+    ygs.fetchAllPages()
